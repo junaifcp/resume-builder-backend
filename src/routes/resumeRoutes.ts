@@ -1,0 +1,46 @@
+// ---- FILE: src/routes/resumeRoutes.ts ----
+
+import { Router } from "express";
+import {
+  createResume,
+  getAllResumes,
+  getResumeById,
+  updateResume,
+  deleteResume,
+  duplicateResume,
+} from "../controllers/resumeController";
+import { checkActiveSubscription } from "../middleware/subscriptionMiddleware";
+import { validate } from "../middleware/validationMiddleware";
+import { resumeValidationSchema } from "../utils/validationSchemas";
+
+const router = Router();
+
+// Utility to wrap async route handlers and forward errors to Express
+const asyncHandler = (fn: any) => (req: any, res: any, next: any) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
+// Note: The clerkAuth middleware is applied to this entire router in app.ts
+
+// Routes for the collection of resumes
+router
+  .route("/")
+  .get(asyncHandler(getAllResumes))
+  .post(validate(resumeValidationSchema), asyncHandler(createResume));
+
+// Routes for a specific resume by its ID
+router
+  .route("/:id")
+  .get(asyncHandler(getResumeById))
+  .put(validate(resumeValidationSchema), asyncHandler(updateResume))
+  .delete(asyncHandler(deleteResume));
+// A user needs an active subscription to view/download a single resume
+/**
+ * @route   POST /api/resumes/:id/duplicate
+ * @desc    Creates a copy of an existing resume.
+ * @access  Private (Authenticated users only)
+ */
+router.post("/:id/duplicate", asyncHandler(duplicateResume));
+
+// router.post("/:id/duplicate", asyncHandler(duplicateResume));
+
+export default router;
