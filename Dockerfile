@@ -37,9 +37,8 @@ RUN npm install --omit=dev
 # Copy the compiled code from the 'builder' stage
 COPY --from=builder /usr/src/app/dist ./dist
 
-# Copy the uploads directory if you want to include existing uploads in the image
-# NOTE: This does not make uploads persistent. See Step 5 for handling persistent storage.
-COPY uploads ./uploads
+# Create the uploads directory inside the image if it doesn't exist
+RUN mkdir -p /usr/src/app/uploads
 
 # Your application listens on a port defined by the PORT environment variable.
 # We expose it here. Defaulting to 5001 if not set.
