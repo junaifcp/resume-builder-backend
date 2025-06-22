@@ -37,27 +37,27 @@ const PORT = process.env.PORT || 5000;
 
 // Enable Cross-Origin Resource Sharing (CORS) for your frontend
 // app.use(cors({ origin: process.env.CORS_ORIGIN }));
-const whitelist = [process.env.CORS_ORIGIN, process.env.NGROK_URL].filter(
-  Boolean
-) as string[];
+// const whitelist = [process.env.CORS_ORIGIN, process.env.NGROK_URL].filter(
+//   Boolean
+// ) as string[];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || whitelist.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn(`[CORS] Blocked origin: ${origin}`);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-    optionsSuccessStatus: 204,
-  })
-);
-// app.options("*", cors());
+// app.use(
+//   cors({
+//     origin: (origin, callback) => {
+//       if (!origin || whitelist.includes(origin)) {
+//         callback(null, true);
+//       } else {
+//         console.warn(`[CORS] Blocked origin: ${origin}`);
+//         callback(new Error("Not allowed by CORS"));
+//       }
+//     },
+//     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//     credentials: true,
+//     optionsSuccessStatus: 204,
+//   })
+// );
+app.options("*", cors());
 
 // Set various security HTTP headers
 app.use(helmet());
