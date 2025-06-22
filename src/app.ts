@@ -25,8 +25,6 @@ import subscriptionRoutes from "./routes/subscriptionRoutes";
 const app: Express = express();
 
 // === FIX FOR PROXY & RATE LIMITING ===
-// Trust the first proxy in front of the app. This is required for services like
-// Heroku, Vercel, or other proxies to ensure express-rate-limit works correctly.
 app.set("trust proxy", 1);
 
 const PORT = process.env.PORT || 5000;
@@ -35,18 +33,20 @@ const PORT = process.env.PORT || 5000;
 // GLOBAL MIDDLEWARE
 // =================================================================
 
-// Enable Cross-Origin Resource Sharing (CORS) for your frontend
-// app.use(cors({ origin: process.env.CORS_ORIGIN }));
-// const whitelist = [process.env.CORS_ORIGIN, process.env.NGROK_URL].filter(
-//   Boolean
-// ) as string[];
 // --- UPDATED CORS SETUP FOR MULTIPLE ORIGINS ---
 const allowedOrigins = [
   "http://localhost:8080",
   "https://resume.fitmyjob.com",
-  "https://dz876y8j9dgx0.cloudfront.net",
-  "http://dz876y8j9dgx0.cloudfront.net",
+  "http://dz876y8j9dgx0.cloudfront.net", // Your CloudFront URL (HTTP)
+  "https://dz876y8j9dgx0.cloudfront.net", // Your CloudFront URL (HTTPS)
 ];
+
+if (
+  process.env.NODE_ENV === "development" ||
+  process.env.NODE_ENV === "production"
+) {
+  console.log("[CORS] Allowed Origins:", allowedOrigins);
+}
 
 app.use(
   cors({
@@ -66,7 +66,6 @@ app.use(
     optionsSuccessStatus: 204,
   })
 );
-// app.options("*", cors());
 
 // Set various security HTTP headers
 app.use(helmet());
@@ -76,8 +75,6 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// NOTE: The JSON parser is moved below the webhook route.
-
 // Apply a rate limiter to all API requests to prevent abuse
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -86,8 +83,15 @@ const limiter = rateLimit({
   legacyHeaders: false,
   message: "Too many requests from this IP, please try again after 15 minutes.",
 });
-app.use("/api/webhooks", authRoutes);
+
+// IMPORTANT: The order of middleware matters.
+// Webhook routes that need the raw body should come BEFORE the global JSON parser.
+app.use("/api/webhooks", authRoutes); // Assuming this handles webhooks
+
+// Apply rate limiter to all other /api routes
 app.use("/api", limiter);
+
+// Global JSON parser with raw body verification for webhooks
 app.use(
   express.json({
     verify: (req, res, buf) => {
@@ -97,6 +101,8 @@ app.use(
     },
   })
 );
+app.use(express.urlencoded({ extended: true }));
+
 // Serve static files (like uploaded profile images) from the 'uploads' directory
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
@@ -104,14 +110,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // API ROUTES
 // =================================================================
 
-// CRITICAL: The webhook route must be registered BEFORE the global express.json() parser.
-// It needs the raw request body to verify the signature.
-
-// Apply the global JSON parser for all other API routes.
-app.use(express.json({ limit: "10kb" }));
-app.use(express.urlencoded({ extended: true }));
-
-// Register the rest of your API routes that expect JSON bodies.
+// Register your main API routes
 app.use("/api/resumes", clerkAuth, resumeRoutes);
 app.use("/api/upload", clerkAuth, uploadRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
