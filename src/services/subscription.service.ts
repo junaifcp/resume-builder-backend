@@ -8,7 +8,6 @@ import { Types } from "mongoose";
 const CF_BASE = process.env.CASHFREE_ENVIRONMENT_URL!;
 const CF_KEY = process.env.CASHFREE_API_KEY!;
 const CF_SECRET = process.env.CASHFREE_SECRET_KEY!;
-const CF_API_VERSION = process.env.CASHFREE_API_VERSION || "2023-08-01";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000"; // Important for return URLs
 
 // --- TYPES ---
@@ -109,7 +108,8 @@ const createSubscription = async (
       customer_phone: (user as any).phone || "9999999999",
     },
     order_meta: {
-      return_url: `${FRONTEND_URL}/subscription/status?order_id={order_id}`,
+      // include both placeholders here
+      return_url: `${FRONTEND_URL}/payment-success?order_id={order_id}&cf_payment_id={payment_id}`,
     },
     order_id: `order_${user._id.toString()}_${Date.now()}`,
     order_amount: plan.price / 100, // The /orders API expects the amount in rupees.

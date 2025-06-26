@@ -39,6 +39,8 @@ const allowedOrigins = [
   "https://resume.fitmyjob.com",
   "http://dz876y8j9dgx0.cloudfront.net", // Your CloudFront URL (HTTP)
   "https://dz876y8j9dgx0.cloudfront.net", // Your CloudFront URL (HTTPS)
+  "https://resume.fitmyskill.com",
+  "http://resume.fitmyskill.com",
 ];
 
 if (
