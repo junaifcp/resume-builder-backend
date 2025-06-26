@@ -3,6 +3,13 @@
 import Resume, { IResume } from "../models/Resume";
 import { v4 as uuidv4 } from "uuid";
 import mongoose from "mongoose";
+import axios from "axios";
+import FormData from "form-data";
+
+// --- Constants for External API ---
+const EXTERNAL_RESUME_API_URL =
+  "https://api.resumescrap.junaif.com/api/resume/parse/";
+const RESUME_API_KEY = "erBHlqGU.Y0o5zTxeygGqrHn77txHN9d3tj132e9p"; // It's highly recommended to store this in an environment variable
 
 const createResume = async (
   userId: mongoose.Types.ObjectId,
@@ -77,6 +84,40 @@ const duplicateResume = async (
   return duplicatedResume;
 };
 
+/**
+ * Sends a resume file to an external service for parsing.
+ * @param fileBuffer The buffer of the uploaded file.
+ * @param originalname The original name of the file.
+ * @param mimetype The mimetype of the file.
+ * @returns The parsed data from the external API.
+ */
+const scrapResume = async (
+  fileBuffer: Buffer,
+  originalname: string,
+  mimetype: string
+): Promise<any> => {
+  const form = new FormData();
+  form.append("file", fileBuffer, {
+    filename: originalname,
+    contentType: mimetype,
+  });
+
+  try {
+    const response = await axios.post(EXTERNAL_RESUME_API_URL, form, {
+      headers: {
+        ...form.getHeaders(),
+        Authorization: `Api-Key ${RESUME_API_KEY}`,
+      },
+    });
+    // The external API wraps its response in a 'data' object.
+    return response.data;
+  } catch (error) {
+    console.error("Error calling external resume parser:", error);
+    // Re-throw the error to be handled by the controller
+    throw error;
+  }
+};
+
 export const resumeService = {
   createResume,
   getResumeById,
@@ -84,4 +125,5 @@ export const resumeService = {
   updateResume,
   deleteResume,
   duplicateResume,
+  scrapResume,
 };

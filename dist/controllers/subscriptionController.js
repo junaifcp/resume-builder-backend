@@ -126,36 +126,21 @@ exports.createPlan = createPlan;
  */
 const handleCashfreeWebhook = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("\n---  recebido webhook da Cashfree ---");
-    console.log(`Timestamp: ${new Date().toISOString()}`);
     try {
         const rawBody = req.rawBody;
-        console.log("1. Verificando se o corpo bruto existe...");
         if (!rawBody) {
-            throw new Error("Corpo bruto ausente. Verifique a configuração do middleware de verificação.");
+            throw new Error("Corpo bruto ausente.");
         }
-        console.log("   - Corpo bruto encontrado. Comprimento:", rawBody.length);
-        // console.log("   - Corpo bruto (primeiros 200 caracteres):", rawBody.substring(0, 200)); // Descomente para depuração profunda
-        console.log("2. Verificando cabeçalhos do webhook...");
-        // console.log("   - Cabeçalhos recebidos:", JSON.stringify(req.headers, null, 2)); // Descomente para ver todos os cabeçalhos
-        if (!req.headers["x-webhook-signature"] ||
-            !req.headers["x-webhook-timestamp"]) {
-            throw new Error("Cabeçalhos de assinatura ou timestamp do webhook ausentes.");
-        }
-        console.log("   - Cabeçalhos de assinatura e timestamp encontrados.");
-        console.log("3. Chamando o serviço para verificar a assinatura...");
         const verifiedEvent = subscription_service_1.subscriptionService.verifyCashfreeWebhook(rawBody, req.headers);
-        console.log("   - Assinatura do webhook VERIFICADA com sucesso.");
-        console.log("4. Chamando o serviço para lidar com o evento...");
-        // console.log("   - Dados do evento verificado:", JSON.stringify(verifiedEvent, null, 2)); // Descomente para ver o payload completo
+        // --- THIS IS THE MOST IMPORTANT LINE ---
+        // --- ENSURE IT IS EXACTLY LIKE THIS AND NOT COMMENTED OUT ---
+        console.log("--- INÍCIO DO PAYLOAD DO WEBHOOK ---", JSON.stringify(verifiedEvent, null, 2), "--- FIM DO PAYLOAD DO WEBHOOK ---");
+        // ------------------------------------
         yield subscription_service_1.subscriptionService.handleWebhookEvent(verifiedEvent);
-        console.log("   - Processamento do evento concluído com sucesso.");
-        console.log("5. Enviando resposta 200 OK para a Cashfree.");
         res.status(200).json({ status: "success", message: "Webhook processed." });
     }
     catch (error) {
         console.error("💥 FALHA no processamento do webhook da Cashfree:", error.message);
-        // Log do erro completo para depuração
-        console.error(error);
         res.status(400).json({ status: "error", message: error.message });
     }
 });

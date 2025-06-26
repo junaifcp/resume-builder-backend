@@ -7,7 +7,7 @@ const optionalString = zod_1.z.string().optional().or(zod_1.z.literal(""));
 // REUSABLE SUB-SCHEMAS
 // =================================================================
 const experienceSchema = zod_1.z.object({
-    id: zod_1.z.string().uuid(),
+    id: zod_1.z.string(),
     company: zod_1.z.string().min(1, "Company name is required"),
     position: zod_1.z.string().min(1, "Position is required"),
     startDate: zod_1.z.string(),
@@ -16,7 +16,7 @@ const experienceSchema = zod_1.z.object({
     bulletPoints: zod_1.z.array(zod_1.z.string()).optional(),
 });
 const educationSchema = zod_1.z.object({
-    id: zod_1.z.string().uuid(),
+    id: zod_1.z.string(),
     institution: zod_1.z.string().min(1, "Institution is required"),
     degree: zod_1.z.string().min(1, "Degree is required"),
     field: zod_1.z.string().optional(),
@@ -25,7 +25,7 @@ const educationSchema = zod_1.z.object({
     description: zod_1.z.string().optional(),
 });
 const projectSchema = zod_1.z.object({
-    id: zod_1.z.string().uuid(),
+    id: zod_1.z.string(),
     name: zod_1.z.string().min(1, "Project name is required"),
     role: zod_1.z.string().optional(),
     startDate: zod_1.z.string(),
@@ -35,7 +35,7 @@ const projectSchema = zod_1.z.object({
     url: zod_1.z.string().url().optional().or(zod_1.z.literal("")),
 });
 const skillSchema = zod_1.z.object({
-    id: zod_1.z.string().uuid(),
+    id: zod_1.z.string(),
     name: zod_1.z.string().min(1, "Skill name is required"),
     proficiency: zod_1.z
         .number()

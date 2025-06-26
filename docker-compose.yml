@@ -13,7 +13,7 @@ services:
     container_name: swift-resume-api
     # Maps port 5001 on your computer to port 5001 inside the container.
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
     # Mounts the 'uploads' folder from your computer into the container for persistent storage.
     volumes:
       - ./uploads:/usr/src/app/uploads

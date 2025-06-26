@@ -3,7 +3,7 @@
 import { Request, Response } from "express";
 import { resumeService } from "../services/resume.service";
 import { IUser } from "../models/User";
-
+import { isAxiosError } from "axios";
 export const createResume = async (req: Request, res: Response) => {
   const user = (req as any).user as IUser;
   const newResume = await resumeService.createResume(
@@ -67,4 +67,57 @@ export const duplicateResume = async (req: Request, res: Response) => {
     user._id as import("mongodb").ObjectId
   );
   res.status(201).json(newResume);
+};
+
+/**
+ * @controller  scrapResume
+ * @desc        Receives a resume file, passes it to the resumeService for parsing, and returns the result.
+ */
+export const scrapResume = async (req: Request, res: Response) => {
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: "No file uploaded. Please include a file in the 'file' field.",
+    });
+  }
+
+  try {
+    const { buffer, originalname, mimetype } = req.file;
+    const parsedData = await resumeService.scrapResume(
+      buffer,
+      originalname,
+      mimetype
+    );
+
+    // The external API response structure is { success, message, data }
+    // We will forward this structure to our client.
+    res.status(200).json(parsedData);
+  } catch (error) {
+    // Handle errors from the external API call
+    if (isAxiosError(error)) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      if (error.response) {
+        console.error("External API Error:", error.response.data);
+        // Mimic the 422 Unprocessable Entity status from the Python example
+        return res.status(422).json({
+          success: false,
+          message: "Resume parsing failed via external API.",
+          error: error.response.data,
+        });
+      } else if (error.request) {
+        // The request was made but no response was received
+        return res.status(500).json({
+          success: false,
+          message:
+            "Internal error: No response from the resume parser service.",
+        });
+      }
+    }
+    // For other types of errors
+    return res.status(500).json({
+      success: false,
+      message: "An unexpected internal error occurred.",
+    });
+  }
 };

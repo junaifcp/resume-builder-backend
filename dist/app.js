@@ -25,24 +25,32 @@ const subscriptionRoutes_1 = __importDefault(require("./routes/subscriptionRoute
 // Initialize the Express application
 const app = (0, express_1.default)();
 // === FIX FOR PROXY & RATE LIMITING ===
-// Trust the first proxy in front of the app. This is required for services like
-// Heroku, Vercel, or other proxies to ensure express-rate-limit works correctly.
 app.set("trust proxy", 1);
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 // =================================================================
 // GLOBAL MIDDLEWARE
 // =================================================================
-// Enable Cross-Origin Resource Sharing (CORS) for your frontend
-// app.use(cors({ origin: process.env.CORS_ORIGIN }));
-const whitelist = [process.env.CORS_ORIGIN, process.env.NGROK_URL].filter(Boolean);
+// --- UPDATED CORS SETUP FOR MULTIPLE ORIGINS ---
+const allowedOrigins = [
+    "http://localhost:8080",
+    "https://resume.fitmyjob.com",
+    "http://dz876y8j9dgx0.cloudfront.net", // Your CloudFront URL (HTTP)
+    "https://dz876y8j9dgx0.cloudfront.net", // Your CloudFront URL (HTTPS)
+];
+if (process.env.NODE_ENV === "development" ||
+    process.env.NODE_ENV === "production") {
+    console.log("[CORS] Allowed Origins:", allowedOrigins);
+}
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
-        if (!origin || whitelist.includes(origin)) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        // or if the origin is in our whitelist.
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         }
         else {
             console.warn(`[CORS] Blocked origin: ${origin}`);
-            callback(new Error("Not allowed by CORS"));
+            callback(new Error("This origin is not allowed by CORS policy."));
         }
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -50,14 +58,12 @@ app.use((0, cors_1.default)({
     credentials: true,
     optionsSuccessStatus: 204,
 }));
-// app.options("*", cors());
 // Set various security HTTP headers
 app.use((0, helmet_1.default)());
 // Log HTTP requests in development mode for debugging
 if (process.env.NODE_ENV === "development") {
     app.use((0, morgan_1.default)("dev"));
 }
-// NOTE: The JSON parser is moved below the webhook route.
 // Apply a rate limiter to all API requests to prevent abuse
 const limiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -66,8 +72,12 @@ const limiter = (0, express_rate_limit_1.default)({
     legacyHeaders: false,
     message: "Too many requests from this IP, please try again after 15 minutes.",
 });
-app.use("/api/webhooks", authRoutes_1.default);
+// IMPORTANT: The order of middleware matters.
+// Webhook routes that need the raw body should come BEFORE the global JSON parser.
+app.use("/api/webhooks", authRoutes_1.default); // Assuming this handles webhooks
+// Apply rate limiter to all other /api routes
 app.use("/api", limiter);
+// Global JSON parser with raw body verification for webhooks
 app.use(express_1.default.json({
     verify: (req, res, buf) => {
         if (buf && buf.length) {
@@ -75,17 +85,13 @@ app.use(express_1.default.json({
         }
     },
 }));
+app.use(express_1.default.urlencoded({ extended: true }));
 // Serve static files (like uploaded profile images) from the 'uploads' directory
 app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "../uploads")));
 // =================================================================
 // API ROUTES
 // =================================================================
-// CRITICAL: The webhook route must be registered BEFORE the global express.json() parser.
-// It needs the raw request body to verify the signature.
-// Apply the global JSON parser for all other API routes.
-app.use(express_1.default.json({ limit: "10kb" }));
-app.use(express_1.default.urlencoded({ extended: true }));
-// Register the rest of your API routes that expect JSON bodies.
+// Register your main API routes
 app.use("/api/resumes", authMiddleware_1.clerkAuth, resumeRoutes_1.default);
 app.use("/api/upload", authMiddleware_1.clerkAuth, uploadRoutes_1.default);
 app.use("/api/subscriptions", subscriptionRoutes_1.default);

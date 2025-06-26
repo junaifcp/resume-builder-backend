@@ -151,139 +151,80 @@ const verifyCashfreeWebhook = (rawBody, headers) => {
     console.log("   [Service: verifyCashfreeWebhook] A verificação foi bem-sucedida.");
     return JSON.parse(rawBody);
 };
-const handleWebhookEvent = (event) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(`   [Service: handleWebhookEvent] Processando o evento do tipo: ${event.type}`);
-    const subscriptionData = event.data.subscription;
-    if (!(subscriptionData === null || subscriptionData === void 0 ? void 0 : subscriptionData.subscription_id)) {
-        throw new Error("Payload do webhook inválido: 'subscription.subscription_id' ausente.");
-    }
-    const subscriptionId = subscriptionData.subscription_id;
-    console.log(`     - Procurando usuário com subscriptionId: ${subscriptionId}`);
-    const user = yield User_1.default.findOne({
-        "subscription.subscriptionId": subscriptionId,
-    });
-    if (!user) {
-        // IMPORTANTE: Não lance um erro aqui, pois a Cashfree tentará reenviar. Simplesmente registre e saia.
-        console.warn(`     - AVISO: Usuário não encontrado para o subscriptionId: ${subscriptionId}. Ignorando o evento.`);
-        return;
-    }
-    console.log(`     - Usuário encontrado: ${user.email}`);
-    // (O resto da sua lógica de tratamento de eventos permanece a mesma)
-    // ...
-    yield user.save();
-    console.log(`   [Service: handleWebhookEvent] Usuário ${user.email} atualizado com sucesso com o status: ${user.subscription.status}`);
-});
-// const verifyCashfreeWebhook = (
-//   rawBody: string,
-//   headers: Record<string, any>
-// ): CashfreeWebhookEvent => {
-//   const signature = headers["x-webhook-signature"];
-//   const timestamp = headers["x-webhook-timestamp"];
-//   if (!signature || !timestamp) {
-//     throw new Error(
-//       "Webhook Error: Missing 'x-webhook-signature' or 'x-webhook-timestamp' in headers."
-//     );
-//   }
-//   const stringToSign = timestamp + rawBody;
-//   const expectedSignature = crypto
-//     .createHmac("sha256", CF_SECRET)
-//     .update(stringToSign)
-//     .digest("base64");
-//   if (signature !== expectedSignature) {
-//     throw new Error("Webhook Error: Invalid signature.");
-//   }
-//   console.log("Cashfree webhook signature verified successfully.");
-//   return JSON.parse(rawBody);
-// };
 /**
  * Processes a verified webhook event to update subscription status in the database.
- * This function now explicitly handles different event types for success and failure.
+ * This version is now perfectly aligned with the real Cashfree payload structure.
  * @param event - The verified webhook event object from Cashfree.
  */
-// const handleWebhookEvent = async (
-//   event: CashfreeWebhookEvent
-// ): Promise<void> => {
-//   console.log(`Processing Cashfree webhook event: ${event.type}`);
-//   const subscriptionData = event.data.subscription;
-//   if (!subscriptionData?.subscription_id) {
-//     console.error(
-//       "Webhook event is missing subscription data or subscription_id."
-//     );
-//     return;
-//   }
-//   const user = await User.findOne({
-//     "subscription.subscriptionId": subscriptionData.subscription_id,
-//   });
-//   if (!user) {
-//     console.error(
-//       `User not found for subscription_id: ${subscriptionData.subscription_id}. Ignoring event.`
-//     );
-//     return;
-//   }
-//   const plan = await Plan.findById(user.subscription.planId);
-//   if (!plan) {
-//     console.error(
-//       `Plan not found for user: ${user._id} during webhook processing.`
-//     );
-//     return;
-//   }
-//   // --- ENHANCED LOGIC FOR HANDLING DIFFERENT SCENARIOS ---
-//   switch (event.type) {
-//     // --- SUCCESS SCENARIO ---
-//     case "SUBSCRIPTION_PAYMENT_SUCCESS":
-//       console.log(`SUCCESS event for user ${user.email}.`);
-//       user.subscription.status = "active";
-//       // Set the end date only if the subscription is newly activated
-//       if (
-//         !user.subscription.endDate ||
-//         new Date() > user.subscription.endDate
-//       ) {
-//         const endDate = new Date();
-//         endDate.setMonth(endDate.getMonth() + plan.durationMonths);
-//         user.subscription.endDate = endDate;
-//         console.log(
-//           `Subscription activated. End date set to: ${endDate.toISOString()}`
-//         );
-//       }
-//       break;
-//     // This event also indicates a potential move to an active state
-//     case "SUBSCRIPTION_STATUS_UPDATE":
-//       const newStatus = mapCashfreeStatus(subscriptionData.status);
-//       console.log(
-//         `STATUS_UPDATE event for user ${user.email}. New status: ${newStatus}`
-//       );
-//       user.subscription.status = newStatus;
-//       // Also check if it's becoming active
-//       if (
-//         newStatus === "active" &&
-//         (!user.subscription.endDate || new Date() > user.subscription.endDate)
-//       ) {
-//         const endDate = new Date();
-//         endDate.setMonth(endDate.getMonth() + plan.durationMonths);
-//         user.subscription.endDate = endDate;
-//         console.log(
-//           `Subscription activated via status update. End date set to: ${endDate.toISOString()}`
-//         );
-//       }
-//       break;
-//     // --- FAILED SCENARIO ---
-//     case "SUBSCRIPTION_PAYMENT_FAILED":
-//       console.log(`FAILED event for user ${user.email}.`);
-//       // Set status to 'on_hold' to indicate an issue that needs attention
-//       user.subscription.status = "on_hold";
-//       console.log(`Subscription status set to 'on_hold'.`);
-//       break;
-//     default:
-//       console.log(
-//         `Received unhandled event type: ${event.type}. No action taken.`
-//       );
-//       return; // Exit without saving if the event is not one we handle explicitly
-//   }
-//   await user.save();
-//   console.log(
-//     `Successfully updated user ${user.email} with status: ${user.subscription.status}`
-//   );
-// };
+const handleWebhookEvent = (event) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    console.log(`   [Service: handleWebhookEvent] Processing event of type: ${event.type}`);
+    let user = null;
+    // --- FINAL CORRECTED LOGIC TO FIND THE USER ---
+    if (event.type === "PAYMENT_SUCCESS_WEBHOOK" && event.data.customer_details) {
+        // For the initial payment success, we find the user via the top-level customer_details.
+        const customerId = event.data.customer_details.customer_id;
+        if (!customerId) {
+            console.error(`Webhook Error: 'customer_id' not found in PAYMENT_SUCCESS_WEBHOOK payload.`);
+            return;
+        }
+        console.log(`     - Event is order-related. Finding user by customer_id: ${customerId}`);
+        user = yield User_1.default.findById(customerId);
+    }
+    else if ((_a = event.data.subscription) === null || _a === void 0 ? void 0 : _a.subscription_id) {
+        // For subsequent events (renewals, cancellations), we use the subscription_id.
+        const subscriptionId = event.data.subscription.subscription_id;
+        console.log(`     - Event is subscription-related. Finding user by subscription_id: ${subscriptionId}`);
+        user = yield User_1.default.findOne({
+            "subscription.subscriptionId": subscriptionId,
+        });
+    }
+    else {
+        console.warn(`     - WARNING: Could not determine how to find user from this event type. Payload lacks identifiable keys.`);
+        return;
+    }
+    // --- END OF CORRECTED LOGIC ---
+    if (!user) {
+        console.warn(`     - WARNING: User not found for this event. Ignoring.`);
+        return;
+    }
+    console.log(`     - User found: ${user.email}`);
+    const plan = yield Plan_1.default.findById(user.subscription.planId);
+    if (!plan) {
+        console.error(`Plan not found for user: ${user._id} during webhook processing.`);
+        return;
+    }
+    // Activate subscription and save the permanent subscription ID when it arrives
+    switch (event.type) {
+        case "PAYMENT_SUCCESS_WEBHOOK":
+            console.log(`     - Activating subscription for user ${user.email} due to successful order payment.`);
+            user.subscription.status = "active";
+            const endDate = new Date();
+            endDate.setMonth(endDate.getMonth() + plan.durationMonths);
+            user.subscription.endDate = endDate;
+            console.log(`     - Subscription end date set to: ${endDate.toISOString()}`);
+            // IMPORTANT: The permanent subscription_id is not in this event.
+            // We will get it from the SUBSCRIPTION_STATUS_UPDATE event that follows.
+            break;
+        case "SUBSCRIPTION_STATUS_UPDATE":
+            const newStatus = mapCashfreeStatus(event.data.subscription.status);
+            console.log(`     - Updating status for ${user.email} to '${newStatus}' via status update event.`);
+            user.subscription.status = newStatus;
+            // This is where we receive and save the permanent subscription ID
+            if (event.data.subscription.subscription_id) {
+                user.subscription.subscriptionId =
+                    event.data.subscription.subscription_id;
+                console.log(`     - Saved/updated permanent subscription ID: ${user.subscription.subscriptionId}`);
+            }
+            break;
+        // (Add other cases like SUBSCRIPTION_PAYMENT_FAILED as needed)
+        default:
+            console.log(`     - Received unhandled event type: ${event.type}. No action taken.`);
+            return;
+    }
+    yield user.save();
+    console.log(`   [Service: handleWebhookEvent] User ${user.email} updated successfully. New status: ${user.subscription.status}`);
+});
 /**
  * Checks the subscription status for a given user.
  * @param userId The ID of the user to check.
