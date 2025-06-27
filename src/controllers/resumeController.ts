@@ -124,6 +124,23 @@ export const scrapResume = async (req: Request, res: Response) => {
 };
 
 /**
+ * @controller  getPublicResume
+ * @desc        Serves a resume publicly by its ID (no authentication required).
+ */
+export const getPublicResume = async (req: Request, res: Response) => {
+  const resume = await resumeService.getPublicResumeById(
+    req.params.id,
+    undefined // No userId check for public access
+  );
+  if (!resume) {
+    return res.status(404).json({
+      message: "Resume not found.",
+    });
+  }
+  res.status(200).json(resume);
+};
+
+/**
  * Handles the resume upload, extracts text locally, and sends the text
  * to an external service for parsing.
  */

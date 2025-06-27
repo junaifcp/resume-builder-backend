@@ -147,8 +147,19 @@ const scrapResumeFromText = async (text: string): Promise<any> => {
   }
 };
 
+const getPublicResumeById = async (
+  resumeId: string,
+  userId?: mongoose.Types.ObjectId
+): Promise<IResume | null> => {
+  if (userId) {
+    return Resume.findOne({ _id: resumeId, userId: userId });
+  }
+  return Resume.findById(resumeId);
+};
+
 export const resumeService = {
   createResume,
+  getPublicResumeById,
   getResumeById,
   getAllResumesForUser,
   updateResume,
