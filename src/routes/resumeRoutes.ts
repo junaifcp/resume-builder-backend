@@ -9,7 +9,7 @@ import {
   deleteResume,
   duplicateResume,
   scrapResume,
-  scrapResumeToText,
+  // scrapResumeToText,
 } from "../controllers/resumeController";
 import { checkActiveSubscription } from "../middleware/subscriptionMiddleware";
 import { validate } from "../middleware/validationMiddleware";
