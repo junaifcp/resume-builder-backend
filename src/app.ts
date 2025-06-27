@@ -5,7 +5,8 @@ import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import path from "path";
-import "express-async-errors"; // Handles async errors automatically
+import "express-async-errors";
+import contactRoutes from "./routes/contactRoutes";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -116,6 +117,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use("/api/resumes", clerkAuth, resumeRoutes);
 app.use("/api/upload", clerkAuth, uploadRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/contact", contactRoutes);
 
 // A simple health check endpoint
 app.get("/api/health", (req: Request, res: Response) => {

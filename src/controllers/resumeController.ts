@@ -3,6 +3,7 @@
 import { Request, Response } from "express";
 import { resumeService } from "../services/resume.service";
 import { IUser } from "../models/User";
+import { extractTextFromFile } from "../utils/resume-extractor";
 import { isAxiosError } from "axios";
 export const createResume = async (req: Request, res: Response) => {
   const user = (req as any).user as IUser;
@@ -115,6 +116,74 @@ export const scrapResume = async (req: Request, res: Response) => {
       }
     }
     // For other types of errors
+    return res.status(500).json({
+      success: false,
+      message: "An unexpected internal error occurred.",
+    });
+  }
+};
+
+/**
+ * Handles the resume upload, extracts text locally, and sends the text
+ * to an external service for parsing.
+ */
+export const scrapResumeToText = async (req: Request, res: Response) => {
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: "No file uploaded. Please include a file in the 'file' field.",
+    });
+  }
+
+  try {
+    // Step 1: Extract text from the uploaded file locally.
+    const extractedText = await extractTextFromFile(req.file);
+
+    if (!extractedText || extractedText.trim().length === 0) {
+      return res.status(422).json({
+        success: false,
+        message: "Could not extract any text from the uploaded file.",
+      });
+    }
+
+    // Step 2: Call the resume service with the extracted text.
+    const parsedData = await resumeService.scrapResumeFromText(extractedText);
+
+    // Step 3: Forward the successful response from the Python API to the client.
+    res.status(200).json(parsedData);
+  } catch (error) {
+    // Handle errors from the local text extraction process.
+    if (
+      error instanceof Error &&
+      error.message.startsWith("Failed to extract")
+    ) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    // Handle errors from the external API call (axios).
+    if (isAxiosError(error)) {
+      if (error.response) {
+        // The external API responded with an error.
+        console.error("External API Error:", error.response.data);
+        return res.status(error.response.status || 422).json({
+          success: false,
+          message: "Resume parsing failed via external API.",
+          error: error.response.data,
+        });
+      } else if (error.request) {
+        // The request was made, but no response was received.
+        return res.status(503).json({
+          success: false,
+          message: "No response from the resume parser service.",
+        });
+      }
+    }
+
+    // Handle any other unexpected errors.
+    console.error("An unexpected error occurred:", error);
     return res.status(500).json({
       success: false,
       message: "An unexpected internal error occurred.",

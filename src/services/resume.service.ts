@@ -118,6 +118,35 @@ const scrapResume = async (
   }
 };
 
+/**
+ * Calls the external Python API with raw resume text to get parsed data.
+ * @param text - The raw text extracted from the resume.
+ * @returns The JSON response from the parsing API.
+ */
+const scrapResumeFromText = async (text: string): Promise<any> => {
+  // This URL points to your new endpoint that accepts raw text.
+  const TEXT_PARSER_API_URL = `${process.env.EXTERNAL_API_BASE_URL}/api/resume/resume-text-parse/`;
+
+  try {
+    const response = await axios.post(
+      TEXT_PARSER_API_URL,
+      { text }, // The request body is a JSON object with a "text" key.
+      {
+        headers: {
+          "Content-Type": "application/json", // Set content type to JSON.
+          Authorization: `Api-Key ${process.env.RESUME_API_KEY}`,
+        },
+      }
+    );
+    // The external API wraps its response in a 'data' object.
+    return response.data;
+  } catch (error) {
+    console.error("Error calling external resume text parser:", error);
+    // Re-throw the error to be handled by the controller's error handling logic.
+    throw error;
+  }
+};
+
 export const resumeService = {
   createResume,
   getResumeById,
@@ -126,4 +155,5 @@ export const resumeService = {
   deleteResume,
   duplicateResume,
   scrapResume,
+  scrapResumeFromText,
 };

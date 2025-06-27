@@ -27,6 +27,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.resumeService = void 0;
 const Resume_1 = __importDefault(require("../models/Resume"));
 const uuid_1 = require("uuid");
+const axios_1 = __importDefault(require("axios"));
+const form_data_1 = __importDefault(require("form-data"));
+// --- Constants for External API ---
+const EXTERNAL_RESUME_API_URL = "https://api.resumescrap.junaif.com/api/resume/parse/";
+const RESUME_API_KEY = "erBHlqGU.Y0o5zTxeygGqrHn77txHN9d3tj132e9p"; // It's highly recommended to store this in an environment variable
 const createResume = (userId, resumeData) => __awaiter(void 0, void 0, void 0, function* () {
     const newResume = new Resume_1.default(Object.assign(Object.assign({}, resumeData), { userId: userId, id: (0, uuid_1.v4)() }));
     yield newResume.save();
@@ -57,6 +62,57 @@ const duplicateResume = (resumeId, userId) => __awaiter(void 0, void 0, void 0, 
     yield duplicatedResume.save();
     return duplicatedResume;
 });
+/**
+ * Sends a resume file to an external service for parsing.
+ * @param fileBuffer The buffer of the uploaded file.
+ * @param originalname The original name of the file.
+ * @param mimetype The mimetype of the file.
+ * @returns The parsed data from the external API.
+ */
+const scrapResume = (fileBuffer, originalname, mimetype) => __awaiter(void 0, void 0, void 0, function* () {
+    const form = new form_data_1.default();
+    form.append("file", fileBuffer, {
+        filename: originalname,
+        contentType: mimetype,
+    });
+    try {
+        const response = yield axios_1.default.post(EXTERNAL_RESUME_API_URL, form, {
+            headers: Object.assign(Object.assign({}, form.getHeaders()), { Authorization: `Api-Key ${RESUME_API_KEY}` }),
+        });
+        // The external API wraps its response in a 'data' object.
+        return response.data;
+    }
+    catch (error) {
+        console.error("Error calling external resume parser:", error);
+        // Re-throw the error to be handled by the controller
+        throw error;
+    }
+});
+/**
+ * Calls the external Python API with raw resume text to get parsed data.
+ * @param text - The raw text extracted from the resume.
+ * @returns The JSON response from the parsing API.
+ */
+const scrapResumeFromText = (text) => __awaiter(void 0, void 0, void 0, function* () {
+    // This URL points to your new endpoint that accepts raw text.
+    const TEXT_PARSER_API_URL = `${process.env.EXTERNAL_API_BASE_URL}/api/resume/resume-text-parse/`;
+    try {
+        const response = yield axios_1.default.post(TEXT_PARSER_API_URL, { text }, // The request body is a JSON object with a "text" key.
+        {
+            headers: {
+                "Content-Type": "application/json", // Set content type to JSON.
+                Authorization: `Api-Key ${process.env.RESUME_API_KEY}`,
+            },
+        });
+        // The external API wraps its response in a 'data' object.
+        return response.data;
+    }
+    catch (error) {
+        console.error("Error calling external resume text parser:", error);
+        // Re-throw the error to be handled by the controller's error handling logic.
+        throw error;
+    }
+});
 exports.resumeService = {
     createResume,
     getResumeById,
@@ -64,4 +120,6 @@ exports.resumeService = {
     updateResume,
     deleteResume,
     duplicateResume,
+    scrapResume,
+    scrapResumeFromText,
 };
