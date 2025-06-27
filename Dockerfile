@@ -1,8 +1,21 @@
 # Dockerfile
 
 # --- Stage 1: Builder ---
-# This stage installs all dependencies (including dev) and builds the TypeScript code.
-FROM node:18-alpine AS builder
+# Use Node 20 on Debian for compatibility with pdfjs-dist@5.x and native builds
+FROM node:20-bullseye AS builder
+
+# Install Python3, build tools, and native libs for canvas
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      python3 \
+      python3-dev \
+      build-essential \
+      libcairo2-dev \
+      libpango1.0-dev \
+      libjpeg-dev \
+      libgif-dev \
+      librsvg2-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set the working directory inside the container
 WORKDIR /usr/src/app
@@ -16,33 +29,31 @@ RUN npm install
 # Copy the rest of your application's source code
 COPY . .
 
-# Run the build script from your package.json (tsc)
-# This will compile your TypeScript into JavaScript in a /dist folder
+# Run the build script (e.g., tsc)
 RUN npm run build
 
 
 # --- Stage 2: Production ---
-# This stage creates the final, lean image for running the application.
-FROM node:18-alpine
+# Use the same Node base to avoid runtime mismatches
+FROM node:20-bullseye AS runtime
 
 # Set the working directory
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json again
+# Copy package.json and package-lock.json again for prod install
 COPY package*.json ./
 
-# Install ONLY production dependencies. --omit=dev is crucial.
+# Install ONLY production dependencies
 RUN npm install --omit=dev
 
-# Copy the compiled code from the 'builder' stage
+# Copy the compiled code from the builder stage
 COPY --from=builder /usr/src/app/dist ./dist
 
 # Create the uploads directory inside the image if it doesn't exist
 RUN mkdir -p /usr/src/app/uploads
 
-# Your application listens on a port defined by the PORT environment variable.
-# We expose it here. Defaulting to 5001 if not set.
+# Expose the application port (match your code's listen port)
 EXPOSE 5001
 
-# The command to start your application, based on your package.json "start" script.
+# Start the application
 CMD [ "node", "dist/app.js" ]
