@@ -7,9 +7,8 @@ import axios from "axios";
 import FormData from "form-data";
 
 // --- Constants for External API ---
-const EXTERNAL_RESUME_API_URL =
-  "https://api.resumescrap.junaif.com/api/resume/parse/";
-const RESUME_API_KEY = "erBHlqGU.Y0o5zTxeygGqrHn77txHN9d3tj132e9p"; // It's highly recommended to store this in an environment variable
+const EXTERNAL_RESUME_API_URL = process.env.EXTERNAL_RESUME_API_URL!;
+const RESUME_API_KEY = process.env.RESUME_API_KEY!;
 
 const createResume = async (
   userId: mongoose.Types.ObjectId,
