@@ -30,10 +30,42 @@ const getResumeById = async (
   return Resume.findOne({ _id: resumeId, userId: userId });
 };
 
-const getAllResumesForUser = async (
-  userId: mongoose.Types.ObjectId
-): Promise<IResume[]> => {
-  return Resume.find({ userId: userId }).sort({ updatedAt: -1 });
+export const getAllResumesForUser = async (
+  userId: mongoose.Types.ObjectId,
+  page: number,
+  limit: number
+) => {
+  // Calculate the number of documents to skip
+  const skip = (page - 1) * limit;
+
+  // Run queries in parallel for efficiency:
+  // 1. Get the total count of resumes for the user.
+  // 2. Get the actual resumes for the current page.
+  const [total, resumes] = await Promise.all([
+    Resume.countDocuments({ userId }),
+    Resume.find({ userId: userId })
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(limit),
+  ]);
+
+  // Calculate pagination metadata
+  const totalPages = Math.ceil(total / limit);
+  const hasNextPage = page < totalPages;
+  const hasPrevPage = page > 1;
+
+  // Return the data in the format expected by the frontend hook
+  return {
+    data: resumes,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNextPage,
+      hasPrevPage,
+    },
+  };
 };
 
 const updateResume = async (

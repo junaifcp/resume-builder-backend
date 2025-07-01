@@ -16,10 +16,21 @@ export const createResume = async (req: Request, res: Response) => {
 
 export const getAllResumes = async (req: Request, res: Response) => {
   const user = (req as any).user as IUser;
-  const resumes = await resumeService.getAllResumesForUser(
-    user._id as import("mongodb").ObjectId
+
+  // 1. Parse 'page' and 'limit' from the request query string.
+  // 2. Provide default values if they are not specified.
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+
+  // Call the updated service function with the user ID and pagination parameters
+  const paginatedResumes = await resumeService.getAllResumesForUser(
+    user._id as import("mongodb").ObjectId,
+    page,
+    limit
   );
-  res.status(200).json(resumes);
+
+  // Send the structured paginated response back to the client
+  res.status(200).json(paginatedResumes);
 };
 
 export const getResumeById = async (req: Request, res: Response) => {
