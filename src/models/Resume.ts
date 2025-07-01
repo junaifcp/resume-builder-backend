@@ -16,7 +16,16 @@ export interface IResume extends Document {
   website: string;
   summary: string;
   themeColor: string;
-  templateId: "template-a" | "template-b" | "template-c" | "template-d";
+  headerColor: string;
+  templateId:
+    | "template-a"
+    | "template-b"
+    | "template-c"
+    | "template-d"
+    | "template-e"
+    | "template-f"
+    | "template-g"
+    | "template-h";
   headerAlignment: "left" | "center" | "right";
   profileImage?: string;
   declaration?: string;
@@ -75,9 +84,19 @@ const resumeSchema = new Schema<IResume>(
     website: { type: String, default: "" },
     summary: { type: String, default: "" },
     themeColor: { type: String, default: "#0EA5E9" },
+    headerColor: { type: String, default: "#0EA5E9" },
     templateId: {
       type: String,
-      enum: ["template-a", "template-b", "template-c", "template-d"],
+      enum: [
+        "template-a",
+        "template-b",
+        "template-c",
+        "template-d",
+        "template-e",
+        "template-f",
+        "template-g",
+        "template-h",
+      ],
       default: "template-a",
     },
     headerAlignment: {

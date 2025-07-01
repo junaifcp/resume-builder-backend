@@ -60,7 +60,17 @@ export const resumeValidationSchema = z.object({
   website: optionalString, // allow empty
   summary: optionalString,
   themeColor: optionalString, // you can fill default in model
-  templateId: z.enum(["template-a", "template-b", "template-c", "template-d"]),
+  headerColor: optionalString, // you can fill default in model
+  templateId: z.enum([
+    "template-a",
+    "template-b",
+    "template-c",
+    "template-d",
+    "template-e",
+    "template-f",
+    "template-g",
+    "template-h",
+  ]),
   headerAlignment: z.enum(["left", "center", "right"]).optional(),
   profileImage: optionalString,
   declaration: optionalString,
@@ -68,6 +78,9 @@ export const resumeValidationSchema = z.object({
   education: z.array(educationSchema).optional(),
   projects: z.array(projectSchema).optional(),
   skills: z.array(skillSchema).optional(),
+  languages: z.array(z.string()).optional(),
+  certifications: z.array(z.string()).optional(),
+  awards: z.array(z.string()).optional(),
 });
 
 /**
