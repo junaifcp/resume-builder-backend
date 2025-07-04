@@ -1,4 +1,6 @@
 import { z } from "zod";
+import Joi from "joi";
+
 const optionalString = z.string().optional().or(z.literal(""));
 // =================================================================
 // REUSABLE SUB-SCHEMAS
@@ -34,7 +36,18 @@ const projectSchema = z.object({
   bulletPoints: z.array(z.string()).optional(),
   url: z.string().url().optional().or(z.literal("")),
 });
+// --- NEW: Schema for the 'languages' array items ---
+const languageSchema = z.object({
+  language: z.string().min(1, "Language is required"),
+  proficiency: z.string().min(1, "Proficiency is required"),
+});
 
+// --- NEW: Schema for the 'certifications' array items ---
+const certificationSchema = z.object({
+  name: z.string().min(1, "Certification name is required"),
+  issuer: z.string().min(1, "Issuer is required"),
+  date: optionalString,
+});
 const skillSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Skill name is required"),
@@ -78,8 +91,8 @@ export const resumeValidationSchema = z.object({
   education: z.array(educationSchema).optional(),
   projects: z.array(projectSchema).optional(),
   skills: z.array(skillSchema).optional(),
-  languages: z.array(z.string()).optional(),
-  certifications: z.array(z.string()).optional(),
+  languages: z.array(languageSchema).optional(),
+  certifications: z.array(certificationSchema).optional(),
   awards: z.array(z.string()).optional(),
 });
 
@@ -106,4 +119,48 @@ export const createPlanSchema = z.object({
     .number()
     .int()
     .positive("Duration must be a positive integer"),
+});
+const addressSchema = Joi.object({
+  line1: Joi.string().required(),
+  city: Joi.string().required(),
+  state: Joi.string().required(),
+  zipCode: Joi.string().required(),
+});
+
+const applicantSchema = Joi.object({
+  fullName: Joi.string().required(),
+  email: Joi.string().email().required(),
+  phone: Joi.string().required(),
+  address: addressSchema.required(),
+  linkedin: Joi.string().uri().allow(""),
+  portfolio: Joi.string().uri().allow(""),
+});
+
+const recipientSchema = Joi.object({
+  fullName: Joi.string().required(),
+  jobTitle: Joi.string().required(),
+  companyName: Joi.string().required(),
+  address: addressSchema.required(),
+});
+
+export const coverLetterValidationSchema = Joi.object({
+  name: Joi.string().min(1).max(100).required(),
+  applicant: applicantSchema.required(),
+  date: Joi.string().isoDate().required(),
+  recipient: recipientSchema.required(),
+  jobInfo: Joi.object({
+    position: Joi.string().required(),
+    source: Joi.string().allow(""),
+  }).required(),
+  salutation: Joi.string().required(),
+  body: Joi.object({
+    opening: Joi.string().required(),
+    paragraph1: Joi.string().required(),
+    paragraph2: Joi.string().allow(""),
+    closing: Joi.string().required(),
+  }).required(),
+  signoff: Joi.object({
+    phrase: Joi.string().required(),
+    signatureName: Joi.string().required(),
+  }).required(),
 });

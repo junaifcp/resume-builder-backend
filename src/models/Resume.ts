@@ -62,6 +62,16 @@ export interface IResume extends Document {
     name: string;
     proficiency: number;
   }[];
+  languages: {
+    language: string;
+    proficiency: string;
+  }[];
+  certifications: {
+    name: string;
+    issuer: string;
+    date?: string;
+  }[];
+  awards: string[];
   lastUpdated: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -157,6 +167,29 @@ const resumeSchema = new Schema<IResume>(
           proficiency: { type: Number, min: 0, max: 100 },
         },
       ],
+      default: [],
+    },
+    languages: {
+      type: [
+        {
+          language: String,
+          proficiency: String,
+        },
+      ],
+      default: [],
+    },
+    certifications: {
+      type: [
+        {
+          name: String,
+          issuer: String,
+          date: String,
+        },
+      ],
+      default: [],
+    },
+    awards: {
+      type: [String],
       default: [],
     },
     lastUpdated: { type: Date, default: Date.now },
