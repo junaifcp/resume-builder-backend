@@ -97,8 +97,10 @@ app.use("/api/webhooks", authRoutes); // Assuming this handles webhooks
 app.use("/api", limiter);
 
 // Global JSON parser with raw body verification for webhooks
+// Global JSON parser with raw body verification for webhooks
 app.use(
   express.json({
+    limit: "10mb", // ⬅️ increase this from default 100kb
     verify: (req, res, buf) => {
       if (buf && buf.length) {
         (req as any).rawBody = buf.toString("utf-8");
@@ -106,7 +108,8 @@ app.use(
     },
   })
 );
-app.use(express.urlencoded({ extended: true }));
+
+app.use(express.urlencoded({ extended: true, limit: "10mb" })); // ⬅️ add limit here too
 
 // Serve static files (like uploaded profile images) from the 'uploads' directory
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

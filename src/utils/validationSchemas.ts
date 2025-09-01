@@ -1,7 +1,8 @@
 import { z } from "zod";
 import Joi from "joi";
 
-const optionalString = z.string().optional().or(z.literal(""));
+const optionalString = z.string().optional().or(z.literal("")).or(z.null());
+
 // =================================================================
 // REUSABLE SUB-SCHEMAS
 // =================================================================
