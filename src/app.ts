@@ -23,6 +23,7 @@ import uploadRoutes from "./routes/uploadRoutes";
 import subscriptionRoutes from "./routes/subscriptionRoutes";
 import publicRoutes from "./routes/publicRoutes";
 import coverLetterRoutes from "./routes/coverLetterRoutes";
+import jobRoutes from "./routes/jobRoutes";
 
 // Initialize the Express application
 const app: Express = express();
@@ -125,6 +126,7 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/shared", publicRoutes);
 app.use("/api/cover-letters", clerkAuth, coverLetterRoutes);
+app.use("/api/jobs", jobRoutes);
 
 // A simple health check endpoint
 app.get("/api/health", (req: Request, res: Response) => {
