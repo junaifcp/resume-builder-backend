@@ -7,6 +7,7 @@ import rateLimit from "express-rate-limit";
 import path from "path";
 import "express-async-errors";
 import contactRoutes from "./routes/contactRoutes";
+import userRoutes from "./routes/userRoutes";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -126,7 +127,9 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/shared", publicRoutes);
 app.use("/api/cover-letters", clerkAuth, coverLetterRoutes);
-app.use("/api/jobs", jobRoutes);
+app.use("/api/jobs", clerkAuth, jobRoutes);
+
+app.use("/api/user", clerkAuth, userRoutes);
 
 // A simple health check endpoint
 app.get("/api/health", (req: Request, res: Response) => {
