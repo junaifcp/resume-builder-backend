@@ -142,3 +142,6 @@ yalc.lock
 .DS_Store
 Thumbs.db
 desktop.ini
+
+docker-compose.yml
+docker-compose.*.yml

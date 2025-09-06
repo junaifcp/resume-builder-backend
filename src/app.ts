@@ -25,6 +25,7 @@ import subscriptionRoutes from "./routes/subscriptionRoutes";
 import publicRoutes from "./routes/publicRoutes";
 import coverLetterRoutes from "./routes/coverLetterRoutes";
 import jobRoutes from "./routes/jobRoutes";
+import atsRoutes from "./routes/atsRoutes";
 
 // Initialize the Express application
 const app: Express = express();
@@ -128,6 +129,7 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/shared", publicRoutes);
 app.use("/api/cover-letters", clerkAuth, coverLetterRoutes);
 app.use("/api/jobs", clerkAuth, jobRoutes);
+app.use("/api/ats", atsRoutes);
 
 app.use("/api/user", clerkAuth, userRoutes);
 
